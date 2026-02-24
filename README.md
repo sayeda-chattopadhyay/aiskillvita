@@ -1,36 +1,78 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Skill Vita
+
+An AI-powered web app that extracts professional skills from a CV/resume PDF using Google Gemini.
+
+## Features
+
+- Upload a CV as a PDF
+- Preview the PDF directly in the browser
+- Automatically extract all professional skills using Google Gemini 2.5 Flash
+- Display extracted skills as tags with a "see more / see less" toggle
+
+## Tech Stack
+
+- [Next.js 15](https://nextjs.org) (App Router, Server Actions)
+- [React 19](https://react.dev)
+- [Tailwind CSS v4](https://tailwindcss.com)
+- [Vercel AI SDK](https://sdk.vercel.ai) with Google Gemini (`gemini-2.5-flash`)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+You need a Google Gemini API key. Get one at [Google AI Studio](https://aistudio.google.com).
+
+### Setup
+
+1. Clone the repository and install dependencies:
+
+```bash
+npm install
+```
+
+2. Create a `.env.local` file in the root with your API key:
+
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+3. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. The user uploads a PDF CV via the file input.
+2. The PDF is previewed in an `<iframe>` on the left side of the page.
+3. On form submission, the PDF is sent to a Next.js Server Action (`extractSkills`).
+4. The Server Action passes the raw PDF bytes directly to Gemini 2.5 Flash as a multimodal prompt.
+5. Gemini returns a JSON array of skill strings, which are rendered as amber-coloured tags.
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+  app/
+    actions.ts   # Server Action: sends PDF to Gemini and parses the response
+    page.tsx     # Client component: file upload, PDF preview, skills display
+    layout.tsx   # Root layout
+    globals.css  # Global styles (Tailwind)
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable        | Description              |
+|-----------------|--------------------------|
+| `GEMINI_API_KEY` | Google Gemini API key   |
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Deploy with [Vercel](https://vercel.com) — just add `GEMINI_API_KEY` in your project environment variables.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+vercel deploy
+```
