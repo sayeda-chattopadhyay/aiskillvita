@@ -1,13 +1,24 @@
-# AI Skill Vita
+# AI-skillVita
+AI Skill-Role Match & CV Tailoring Platform
 
-An AI-powered web app that extracts professional skills from a CV/resume PDF using Google Gemini.
+## Overview
 
-## Features
+A fullstack AI-powered web application built with Next.js (App Router) and @google/generative-ai, allowing users to:
 
-- Upload a CV as a PDF
-- Preview the PDF directly in the browser
-- Automatically extract all professional skills using Google Gemini 2.5 Flash
-- Display extracted skills as tags with a "see more / see less" toggle
+- Upload a master CV
+
+- Paste a job URL
+
+- Generate a skill-role match analysis
+
+- Automatically tailor CVs
+
+- Generate customized cover letters
+
+- Save and manage generated documents
+
+- The system uses AI to extract skills, compare them with job requirements, and generate personalized application documents.
+
 
 ## Tech Stack
 
