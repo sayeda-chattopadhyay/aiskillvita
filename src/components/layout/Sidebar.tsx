@@ -1,0 +1,30 @@
+import type { View } from "@/types";
+
+export function Sidebar({ view, setView }: { view: View; setView: (v: View) => void }) {
+  const items: { id: View; label: string; icon: string }[] = [
+    { id: "profile", label: "Profile", icon: "👤" },
+    { id: "skill-match", label: "Skill Match", icon: "⚡" },
+  ];
+
+  return (
+    <aside className="fixed left-0 top-0 h-full w-56 bg-gray-900 border-r border-gray-800 flex flex-col p-4 z-10">
+      <div className="font-bold text-base mb-8 px-2 text-amber-400">AISkillVita</div>
+      <nav className="flex flex-col gap-1">
+        {items.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => setView(item.id)}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-left transition-colors ${
+              view === item.id
+                ? "bg-amber-900/30 text-amber-400"
+                : "text-gray-400 hover:bg-gray-800"
+            }`}
+          >
+            <span>{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+      </nav>
+    </aside>
+  );
+}
