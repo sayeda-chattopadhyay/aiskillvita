@@ -3,17 +3,6 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
-      {/* Navbar */}
-      <header className="border-b border-gray-800 px-8 py-4 flex items-center justify-between">
-        <span className="font-bold text-amber-400 text-lg">AISkillVita</span>
-        <Link
-          href="/profile"
-          className="text-sm text-gray-400 hover:text-gray-100 transition-colors"
-        >
-          My Profile →
-        </Link>
-      </header>
-
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-8">
         <div className="space-y-4 max-w-2xl">
