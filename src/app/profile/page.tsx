@@ -53,11 +53,17 @@ export default function ProfileApp() {
     localStorage.setItem(LS_VIEW, view);
   }, [view, hydrated]);
 
+  function handleDeleteProfile() {
+    if (!window.confirm("Delete your profile? This removes your CV, photo, and all job entries. This cannot be undone.")) return;
+    ["asv_cv", "asv_photo", "asv_jobs", "asv_view"].forEach((k) => localStorage.removeItem(k));
+    window.location.reload();
+  }
+
   if (!hydrated || !profileHydrated) return null;
 
   return (
     <div className="flex min-h-screen bg-gray-950">
-      <Sidebar view={view} setView={setView} />
+      <Sidebar view={view} setView={setView} onDeleteProfile={handleDeleteProfile} />
       <main className="ml-56 flex-1 p-8">
         {view === "profile" ? (
           <ProfileView
