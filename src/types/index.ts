@@ -1,5 +1,5 @@
 // Re-export ProfileData so components only need one import point
-export type { ProfileData } from "@/app/actions";
+export type { ProfileData } from "@/actions/profile";
 
 export type MatchResult = {
   score: number;

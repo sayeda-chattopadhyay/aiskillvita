@@ -8,7 +8,7 @@ import {
   matchCandidate,
   tailorCv,
   createCoverLetter,
-} from "./actions";
+} from "@/actions";
 import type { ProfileData, MatchResult, JobEntry, View } from "@/types";
 
 const VISIBLE_COUNT = 20;
