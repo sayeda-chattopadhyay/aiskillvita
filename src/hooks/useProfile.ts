@@ -4,10 +4,12 @@ import type { ProfileData } from "@/types";
 
 const LS_CV = "asv_cv";
 const LS_PHOTO = "asv_photo";
+const LS_CV_DATA = "asv_cv_data";
 
 export function useProfile() {
   const [cvName, setCvName] = useState<string | null>(null);
   const [cvFormData, setCvFormData] = useState<FormData | null>(null);
+  const [cvDataUrl, setCvDataUrl] = useState<string | null>(null);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
@@ -22,6 +24,8 @@ export function useProfile() {
       if (d.cvName) setCvName(d.cvName);
       if (d.profileData) setProfileData(d.profileData);
     }
+    const savedCvData = localStorage.getItem(LS_CV_DATA);
+    if (savedCvData) setCvDataUrl(savedCvData);
     const savedPhoto = localStorage.getItem(LS_PHOTO);
     if (savedPhoto) setProfilePhoto(savedPhoto);
     setHydrated(true);
@@ -32,6 +36,13 @@ export function useProfile() {
     if (!hydrated) return;
     localStorage.setItem(LS_CV, JSON.stringify({ cvName, profileData }));
   }, [cvName, profileData, hydrated]);
+
+  // Persist CV data URL (the raw PDF for preview)
+  useEffect(() => {
+    if (!hydrated) return;
+    if (cvDataUrl) localStorage.setItem(LS_CV_DATA, cvDataUrl);
+    else localStorage.removeItem(LS_CV_DATA);
+  }, [cvDataUrl, hydrated]);
 
   // Persist photo
   useEffect(() => {
@@ -49,6 +60,10 @@ export function useProfile() {
     setCvName(file.name);
     setProfileLoading(true);
     setProfileError(null);
+    // Read PDF as data URL so we can preview it later
+    const reader = new FileReader();
+    reader.onload = () => setCvDataUrl(reader.result as string);
+    reader.readAsDataURL(file);
     try {
       const data = await extractProfile(fd);
       setProfileData(data);
@@ -71,6 +86,7 @@ export function useProfile() {
     hydrated,
     cvName,
     cvFormData,
+    cvDataUrl,
     profileData,
     profileLoading,
     profileError,
