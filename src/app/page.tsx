@@ -1,126 +1,63 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { extractSkills } from "./actions";
-
-const VISIBLE_COUNT = 20;
+import Link from "next/link";
 
 export default function Home() {
-  const [skills, setSkills] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fileUrl, setFileUrl] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (fileUrl) URL.revokeObjectURL(fileUrl);
-    };
-  }, [fileUrl]);
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (fileUrl) URL.revokeObjectURL(fileUrl);
-    setFileUrl(URL.createObjectURL(file));
-    setFileName(file.name);
-    setSkills([]);
-    setShowAll(false);
-    setError(null);
-  }
-
-  async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const formData = new FormData(e.currentTarget);
-      const extracted = await extractSkills(formData);
-      setSkills(extracted);
-      setShowAll(false);
-    } catch {
-      setError("Failed to extract skills. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const visibleSkills = showAll ? skills : skills.slice(0, VISIBLE_COUNT);
-  const hiddenCount = skills.length - VISIBLE_COUNT;
-
   return (
-    <div className="min-h-screen p-8 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-8">AI Skill Extractor</h1>
-
-      <form onSubmit={handleUpload} className="flex flex-col gap-4 mb-8">
-        <label htmlFor="resume" className="font-medium">
-          Upload CV (PDF)
-        </label>
-        <input
-          id="resume"
-          type="file"
-          name="resume"
-          accept=".pdf"
-          required
-          onChange={handleFileChange}
-          className="border p-2 rounded"
-        />
-        <button
-          type="submit"
-          disabled={loading || !fileUrl}
-          className="bg-amber-400 text-black p-2 rounded disabled:opacity-50"
-        >
-          {loading ? "Extracting..." : "Extract Skills"}
-        </button>
-      </form>
-
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-
-      {fileUrl && (
-        <div className="flex gap-6 items-start">
-          {/* PDF preview - takes remaining space */}
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-semibold mb-2 truncate">{fileName}</h2>
-            <iframe
-              src={fileUrl}
-              className="w-full border rounded"
-              style={{ height: "calc(100vh - 200px)" }}
-              title="Uploaded CV"
-            />
-          </div>
-
-          {/* Skills panel - fixed width, scrollable */}
-          {skills.length > 0 && (
-            <div className="w-72 shrink-0 sticky top-8">
-              <h2 className="text-lg font-semibold mb-4">
-                Extracted Skills ({skills.length})
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {visibleSkills.map((skill) => (
-                  <span
-                    key={skill}
-                    className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-
-              {skills.length > VISIBLE_COUNT && (
-                <button
-                  onClick={() => setShowAll((prev) => !prev)}
-                  className="mt-4 text-sm text-amber-700 underline"
-                >
-                  {showAll
-                    ? "See less"
-                    : `See more (${hiddenCount} more skills)`}
-                </button>
-              )}
-            </div>
-          )}
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
+      {/* Hero */}
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-8">
+        <div className="space-y-4 max-w-2xl">
+          <h1 className="text-4xl font-bold leading-tight">
+            Stop sending generic CVs.{" "}
+            <span className="text-amber-400">Get tailored for every job.</span>
+          </h1>
+          <p className="text-gray-400 text-lg leading-relaxed">
+            AISkillVita reads your CV, analyzes the job posting, and tells you
+            exactly how well you match — then rewrites your CV and cover letter
+            to fit the role. No more one-size-fits-all applications.
+          </p>
         </div>
-      )}
+
+        <Link
+          href="/profile"
+          className="bg-amber-400 text-black font-semibold px-8 py-3 rounded-lg text-base hover:bg-amber-500 transition-colors"
+        >
+          Get Started
+        </Link>
+
+        {/* Feature highlights */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mt-4 text-left">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="text-2xl mb-2">📄</div>
+            <h3 className="font-semibold mb-1">Instant CV Parsing</h3>
+            <p className="text-gray-400 text-sm">
+              Upload your PDF once. AI extracts your name, experience,
+              education, and skills into a structured profile ready to use.
+            </p>
+          </div>
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="text-2xl mb-2">⚡</div>
+            <h3 className="font-semibold mb-1">Match Score & Gap Analysis</h3>
+            <p className="text-gray-400 text-sm">
+              Paste a job posting URL and see your fit score, which skills you
+              already have, and what&apos;s missing — so you know where you
+              stand.
+            </p>
+          </div>
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+            <div className="text-2xl mb-2">✍️</div>
+            <h3 className="font-semibold mb-1">Tailored CV & Cover Letter</h3>
+            <p className="text-gray-400 text-sm">
+              Generate a role-specific CV and cover letter for each application.
+              Edit them in-browser and download as PDF when ready.
+            </p>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-800 px-8 py-4 text-center text-xs text-gray-600">
+        AISkillVita — AI-powered CV & job matching
+      </footer>
     </div>
   );
 }
