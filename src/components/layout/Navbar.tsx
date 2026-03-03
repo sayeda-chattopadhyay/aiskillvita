@@ -18,19 +18,21 @@ export function Navbar() {
 
       {/* Right side */}
       <div className="flex items-center gap-5">
-        <Link
+        {/* <Link
           href="/profile"
           className="text-sm text-gray-400 hover:text-gray-100 transition-colors"
         >
           My Profile
-        </Link>
+        </Link> */}
 
         {/* Language toggle */}
         {/* <div className="flex items-center bg-gray-800 rounded-full p-0.5 text-xs font-medium">
           <button
             onClick={() => setLang("en")}
             className={`px-3 py-1 rounded-full transition-colors ${
-              lang === "en" ? "bg-amber-400 text-black" : "text-gray-400 hover:text-gray-200"
+              lang === "en"
+                ? "bg-amber-400 text-black"
+                : "text-gray-400 hover:text-gray-200"
             }`}
           >
             EN
@@ -38,7 +40,9 @@ export function Navbar() {
           <button
             onClick={() => setLang("no")}
             className={`px-3 py-1 rounded-full transition-colors ${
-              lang === "no" ? "bg-amber-400 text-black" : "text-gray-400 hover:text-gray-200"
+              lang === "no"
+                ? "bg-amber-400 text-black"
+                : "text-gray-400 hover:text-gray-200"
             }`}
           >
             NO
