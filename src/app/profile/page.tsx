@@ -18,6 +18,7 @@ export default function ProfileApp() {
     hydrated: profileHydrated,
     cvName,
     cvFormData,
+    cvDataUrl,
     profileData,
     profileLoading,
     profileError,
@@ -55,7 +56,7 @@ export default function ProfileApp() {
 
   function handleDeleteProfile() {
     if (!window.confirm("Delete your profile? This removes your CV, photo, and all job entries. This cannot be undone.")) return;
-    ["asv_cv", "asv_photo", "asv_jobs", "asv_view"].forEach((k) => localStorage.removeItem(k));
+    ["asv_cv", "asv_cv_data", "asv_photo", "asv_jobs", "asv_view"].forEach((k) => localStorage.removeItem(k));
     window.location.reload();
   }
 
@@ -68,6 +69,7 @@ export default function ProfileApp() {
         {view === "profile" ? (
           <ProfileView
             cvName={cvName}
+            cvDataUrl={cvDataUrl}
             profileData={profileData}
             profileLoading={profileLoading}
             profileError={profileError}
