@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 function initials(name: string) {
   return name
     .split(" ")
@@ -19,7 +21,7 @@ export function Avatar({
   const style = { width: size, height: size, minWidth: size };
   if (photo) {
     return (
-      <img
+      <Image
         src={photo}
         alt={name}
         style={style}
