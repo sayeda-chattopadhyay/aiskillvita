@@ -58,46 +58,31 @@ export async function createCoverLetter(
         content: [
           {
             type: "text",
-            text: `Write a concise one-page cover letter for this job application using the exact structure below.
+            text: `Write a professional, natural-sounding cover letter for this job application. Read the candidate's CV and the job posting carefully, then write in a warm but confident first-person voice.
 
 Job Posting:
 ${jobContent}
 
-Use this exact structure and labels (copy the labels exactly as shown):
+Structure the letter as follows — write flowing prose, no section headings, no labels, no bullet points:
 
-[Line 1 — Headline]: One confident sentence stating one or two personal strengths and the position. Example: "Professional and results-driven engineer applying for the position of Senior Developer."
+1. Salutation: "Dear Hiring Manager," on its own line.
 
-[Blank line]
+2. Opening paragraph (2–3 sentences): Open with a genuine, specific hook — why this role at this company excites the candidate. Reference something real about the company or role. Avoid generic openers like "I am writing to apply for…".
 
-As agreed, I am sending my application and CV for the [job title] position at [company name].
+3. Experience paragraph (3–4 sentences): Draw a clear line between the candidate's past experience and what this role demands. Mention specific roles, projects, or achievements from the CV that directly align to the job requirements. Make it feel like the CV was written for this job.
 
-[Blank line]
+4. Value paragraph (2–3 sentences): Describe what the candidate will concretely bring to the team — not just skills, but impact. Focus on outcomes and contributions, not just competencies.
 
-Motivation – [1–2 sentences: the specific reason you are applying to this company and role. Be concrete.]
+5. Personal qualities paragraph (2–3 sentences): Highlight 1–2 genuine personal traits (e.g., curiosity, ownership, collaboration) that complement the professional background and fit the company culture implied by the posting. Keep it grounded and specific, not generic.
 
-[Blank line]
-
-Past experiences – [2–3 sentences: the most relevant experience or education from the CV that matches this role.]
-
-[Blank line]
-
-Future – What am I offering? [2–3 sentences: specific skills, achievements and contributions you will bring to this position.]
-
-[Blank line]
-
-Why should you hire me? [2–3 sentences: personal qualities combined with professional competence that make you the right fit.]
-
-[Blank line]
-
-I appreciate the opportunity to present myself better in an interview and look forward to hearing from you. I can most easily be reached at [phone or email from CV].
-
-Please find enclosed my CV.
+6. Closing paragraph (2–3 sentences): Express enthusiasm for a conversation. End with a confident but warm closing. Sign off with the candidate's name from the CV.
 
 Rules:
-- Do NOT use asterisks (*), hash (#), or any markdown formatting
-- Write in first person
-- Keep each section to 1–3 sentences — one page total
-- Use details from the CV to make it specific to the job`,
+- Write entirely in plain text — no asterisks (*), no hash (#), no bold markers (**), no markdown of any kind
+- Do not include any bracket labels or section titles in the output
+- Write in first person throughout
+- Keep the total length to one page — concise and purposeful
+- Every detail must come from the CV or the job posting — nothing invented`,
           },
           { type: "file", data: buffer, mediaType: "application/pdf" },
         ],
