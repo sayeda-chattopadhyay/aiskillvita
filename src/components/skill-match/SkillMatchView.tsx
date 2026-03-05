@@ -1,259 +1,412 @@
-import { ScoreBadge } from "@/components/ui/ScoreBadge";
+import { useState } from "react";
 import { MatchDetail } from "@/components/ui/MatchDetail";
-import { downloadPdf } from "@/lib/downloadPdf";
+import { ScoreBadge } from "@/components/ui/ScoreBadge";
+import { downloadPdf, getPdfDataUri } from "@/lib/downloadPdf";
 import type { JobEntry } from "@/types";
+
+const DEMO_MSG =
+  "This feature is available for registered users. In the demo version you can analyse one job posting once. Full access with saved history, unlimited analysis and re-analysis is coming soon.";
+
+// Strip common job-site UI strings and leading blank lines from preview content
+function cleanPreviewContent(raw: string): string {
+  const uiPhrases = [
+    "Gå til annonsen", "Gå til jobben", "Dele", "Del", "Del annonse",
+    "Legg til som favoritt", "Favoritt", "Meld interesse", "Søk på jobb",
+    "Søk her", "Send søknad", "Skriv søknad", "Logg inn", "Bli med",
+    "Registrer deg", "Vis alle stillinger", "Se alle stillinger",
+  ];
+  const phrasePattern = new RegExp(
+    `^(${uiPhrases.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})\\s*$`,
+    "gim"
+  );
+  return raw
+    .replace(phrasePattern, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
 export function SkillMatchView({
   cvName,
-  cvFormData,
-  jobs,
-  newJobUrl,
-  selectedJobId,
-  onUploadCv,
-  onNewJobUrlChange,
-  onAddJob,
-  onAnalyzeJob,
-  onDeleteJob,
-  onSelectJob,
+  hasCv,
+  job,
+  jobUrl,
+  rawJobText,
+  cvGenerated,
+  coverLetterGenerated,
+  onJobUrlChange,
+  onRawJobTextChange,
+  onAnalyseMatch,
   onTailorCv,
   onCreateCoverLetter,
-  onUpdateTailoredCv,
-  onUpdateCoverLetter,
+  onUploadCv,
 }: {
   cvName: string | null;
-  cvFormData: FormData | null;
-  jobs: JobEntry[];
-  newJobUrl: string;
-  selectedJobId: string | null;
+  hasCv: boolean;
+  job: JobEntry;
+  jobUrl: string;
+  rawJobText: string;
+  cvGenerated: boolean;
+  coverLetterGenerated: boolean;
+  onJobUrlChange: (v: string) => void;
+  onRawJobTextChange: (v: string) => void;
+  onAnalyseMatch: () => void;
+  onTailorCv: () => void;
+  onCreateCoverLetter: () => void;
   onUploadCv: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onNewJobUrlChange: (v: string) => void;
-  onAddJob: () => void;
-  onAnalyzeJob: (id: string) => void;
-  onDeleteJob: (id: string) => void;
-  onSelectJob: (id: string) => void;
-  onTailorCv: (id: string) => void;
-  onCreateCoverLetter: (id: string) => void;
-  onUpdateTailoredCv: (id: string, content: string) => void;
-  onUpdateCoverLetter: (id: string, content: string) => void;
 }) {
-  const selectedJob = jobs.find((j) => j.id === selectedJobId);
+  const [showJobPreview, setShowJobPreview] = useState(false);
+  const [showAddNewJobMsg, setShowAddNewJobMsg] = useState(false);
+  const [showReanalyseMsg, setShowReanalyseMsg] = useState(false);
+  const [cvPdfUri, setCvPdfUri] = useState<string | null>(null);
+  const [coverLetterPdfUri, setCoverLetterPdfUri] = useState<string | null>(null);
+
+  const canAnalyse = hasCv && (jobUrl.trim().length > 0 || rawJobText.trim().length > 0);
+  const hasResult = !!job.result;
+
+  function handlePreviewCvPdf() {
+    if (job.tailoredCv) setCvPdfUri(getPdfDataUri(job.tailoredCv));
+  }
+
+  function handlePreviewCoverLetterPdf() {
+    if (job.coverLetter) setCoverLetterPdfUri(getPdfDataUri(job.coverLetter));
+  }
+
+  const cleanedJobContent = job.content ? cleanPreviewContent(job.content) : "";
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       <h1 className="text-xl font-bold">Skill Match</h1>
 
-      {/* CV section */}
-      <div className="border border-gray-700 rounded-xl p-5 bg-gray-900">
-        <h2 className="font-semibold mb-3">Your CV</h2>
-        {cvName && cvFormData ? (
-          <div className="flex items-center gap-3">
-            <span className="text-green-400 text-sm">✓ {cvName}</span>
-            <label className="text-xs text-gray-500 hover:text-gray-300 underline cursor-pointer">
-              Replace
-              <input type="file" accept=".pdf" onChange={onUploadCv} className="hidden" />
-            </label>
+      {/* Two-column grid — single column on mobile */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+        {/* ── LEFT COLUMN ── */}
+        <div className="space-y-4">
+          {/* CV status */}
+          <div className="text-sm">
+            {hasCv ? (
+              <span className="text-green-400">✓ CV loaded{cvName ? `: ${cvName}` : ""}</span>
+            ) : (
+              <span className="text-amber-400">
+                No CV found —{" "}
+                <button onClick={onGoToProfile} className="underline hover:text-amber-300">
+                  go to Profile to upload your CV
+                </button>
+              </span>
+            )}
           </div>
-        ) : (
-          <div className="flex items-center gap-3">
-            <label className="cursor-pointer inline-flex items-center gap-2 border border-gray-600 bg-gray-800 text-gray-200 rounded px-4 py-2 text-sm hover:bg-gray-700">
-              Upload PDF
-              <input type="file" accept=".pdf" onChange={onUploadCv} className="hidden" />
-            </label>
-            {cvName && !cvFormData && (
-              <span className="text-amber-400 text-xs">Re-upload required — CV not in memory</span>
+
+          {/* Input card */}
+          <div className="border border-gray-700 rounded-xl p-5 bg-gray-900 space-y-4">
+            <h2 className="font-semibold text-sm text-gray-300">Add Job Posting</h2>
+
+            {/* URL row */}
+            <div className="flex gap-2">
+              <input
+                type="url"
+                placeholder="Paste job posting URL here"
+                value={jobUrl}
+                onChange={(e) => onJobUrlChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && canAnalyse && !job.analyzing && onAnalyseMatch()}
+                className="border border-gray-600 bg-gray-800 text-gray-100 placeholder:text-gray-500 rounded px-3 py-2 text-sm flex-1 min-w-0"
+              />
+              {job.content && (
+                <button
+                  onClick={() => setShowJobPreview(true)}
+                  className="shrink-0 border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700 px-3 py-2 rounded text-sm"
+                >
+                  Preview
+                </button>
+              )}
+            </div>
+
+            {/* Raw text alternative */}
+            <div>
+              <p className="text-xs text-gray-500 mb-1.5">Or paste the job description directly:</p>
+              <textarea
+                placeholder="Paste job description text here…"
+                value={rawJobText}
+                onChange={(e) => onRawJobTextChange(e.target.value)}
+                rows={5}
+                className="w-full border border-gray-600 bg-gray-800 text-gray-100 placeholder:text-gray-500 rounded px-3 py-2 text-sm resize-y"
+              />
+            </div>
+
+            {/* Analyse Match button (only before results) */}
+            {!hasResult && (
+              <button
+                onClick={onAnalyseMatch}
+                disabled={!canAnalyse || job.analyzing}
+                className="w-full bg-amber-400 text-black font-semibold px-6 py-2.5 rounded-lg text-sm disabled:opacity-50 hover:bg-amber-500 transition-colors"
+              >
+                {job.analyzing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-3.5 h-3.5 border-2 border-black/40 border-t-black rounded-full animate-spin" />
+                    Analysing…
+                  </span>
+                ) : (
+                  "Analyse Match"
+                )}
+              </button>
+            )}
+
+            {!hasCv && (
+              <p className="text-amber-400 text-xs">Upload your CV on the Profile page before analysing.</p>
+            )}
+            {job.error && <p className="text-red-400 text-xs">{job.error}</p>}
+          </div>
+        </div>
+
+        {/* ── RIGHT COLUMN ── */}
+        {hasResult && job.result && (
+          <div className="space-y-4">
+            {/* Score + action row */}
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <ScoreBadge score={job.result.score} />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowReanalyseMsg(true); setShowAddNewJobMsg(false); }}
+                  className="text-xs border border-gray-600 text-gray-400 hover:text-gray-200 px-3 py-1.5 rounded"
+                >
+                  Re-analyse
+                </button>
+                <button
+                  onClick={() => { setShowAddNewJobMsg(true); setShowReanalyseMsg(false); }}
+                  className="text-xs border border-gray-600 text-gray-400 hover:text-gray-200 px-3 py-1.5 rounded"
+                >
+                  Add New Job
+                </button>
+              </div>
+            </div>
+
+            {/* Demo restriction messages */}
+            {showReanalyseMsg && (
+              <div className="border border-gray-700 rounded-lg px-4 py-3 bg-gray-900/60 text-xs text-gray-400">
+                {DEMO_MSG}
+              </div>
+            )}
+            {showAddNewJobMsg && (
+              <div className="border border-gray-700 rounded-lg px-4 py-3 bg-gray-900/60 text-xs text-gray-400">
+                {DEMO_MSG}
+              </div>
+            )}
+
+            {/* Demo notice + generation buttons */}
+            <div className="border border-gray-700 rounded-xl p-4 bg-gray-900 space-y-3">
+              <p className="text-xs text-gray-500">
+                Demo version — you can only perform skill analysis, CV tailoring, and cover letter generation once per visit.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {/* Tailor My CV */}
+                {cvGenerated ? (
+                  <span className="text-xs text-gray-500 border border-gray-700 rounded px-3 py-1.5">
+                    {job.tailoredCv ? "Tailored CV ready ↓" : "Tailored CV already generated"}
+                  </span>
+                ) : (
+                  <button
+                    onClick={onTailorCv}
+                    disabled={!hasCv || job.tailoringCv}
+                    className="flex items-center gap-2 bg-amber-400 text-black font-medium px-4 py-1.5 rounded text-sm hover:bg-amber-500 disabled:opacity-40 transition-colors"
+                  >
+                    {job.tailoringCv ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-black/40 border-t-black rounded-full animate-spin" />
+                        Tailoring…
+                      </>
+                    ) : (
+                      "Tailor My CV"
+                    )}
+                  </button>
+                )}
+
+                {/* Generate Cover Letter */}
+                {coverLetterGenerated ? (
+                  <span className="text-xs text-gray-500 border border-gray-700 rounded px-3 py-1.5">
+                    {job.coverLetter ? "Cover letter ready ↓" : "Cover letter already generated"}
+                  </span>
+                ) : (
+                  <button
+                    onClick={onCreateCoverLetter}
+                    disabled={!hasCv || job.generatingCoverLetter}
+                    className="flex items-center gap-2 bg-gray-800 border border-gray-600 text-gray-200 px-4 py-1.5 rounded text-sm hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                  >
+                    {job.generatingCoverLetter ? (
+                      <>
+                        <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                        Generating…
+                      </>
+                    ) : (
+                      "Generate Cover Letter"
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Match detail */}
+            <MatchDetail result={job.result} />
+
+            {/* ── Generated documents — shown in-column so they're always visible ── */}
+
+            {/* Tailored CV panel */}
+            {(job.tailoredCv || job.tailoringCv) && (
+              <div className="border border-gray-700 rounded-xl p-5 bg-gray-900 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">Your Tailored CV</h3>
+                  {job.tailoredCv && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handlePreviewCvPdf}
+                        className="text-xs border border-gray-600 text-gray-300 px-3 py-1 rounded hover:bg-gray-700"
+                      >
+                        Preview PDF
+                      </button>
+                      <button
+                        onClick={() => downloadPdf("tailored-cv.pdf", job.tailoredCv!)}
+                        className="text-xs bg-amber-400 text-black px-3 py-1 rounded hover:bg-amber-500"
+                      >
+                        Download PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {job.tailoringCv ? (
+                  <div className="flex items-center gap-2 text-gray-400 text-sm py-6">
+                    <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    Rewriting your CV for this role…
+                  </div>
+                ) : (
+                  <div className="bg-gray-800 rounded-lg p-4 max-h-130 overflow-y-auto">
+                    <pre className="text-xs text-gray-200 whitespace-pre-wrap leading-relaxed font-sans">
+                      {job.tailoredCv}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Cover Letter panel */}
+            {(job.coverLetter || job.generatingCoverLetter) && (
+              <div className="border border-gray-700 rounded-xl p-5 bg-gray-900 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-sm">Your Cover Letter</h3>
+                  {job.coverLetter && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handlePreviewCoverLetterPdf}
+                        className="text-xs border border-gray-600 text-gray-300 px-3 py-1 rounded hover:bg-gray-700"
+                      >
+                        Preview PDF
+                      </button>
+                      <button
+                        onClick={() => downloadPdf("cover-letter.pdf", job.coverLetter!)}
+                        className="text-xs bg-amber-400 text-black px-3 py-1 rounded hover:bg-amber-500"
+                      >
+                        Download PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {job.generatingCoverLetter ? (
+                  <div className="flex items-center gap-2 text-gray-400 text-sm py-6">
+                    <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    Writing your cover letter…
+                  </div>
+                ) : (
+                  <div className="bg-gray-800 rounded-lg p-4 max-h-130 overflow-y-auto">
+                    <pre className="text-xs text-gray-200 whitespace-pre-wrap leading-relaxed font-sans">
+                      {job.coverLetter}
+                    </pre>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Add job URL */}
-      <div className="border border-gray-700 rounded-xl p-5 bg-gray-900">
-        <h2 className="font-semibold mb-3">Add Job Posting</h2>
-        <div className="flex gap-2">
-          <input
-            type="url"
-            placeholder="https://www.finn.no/job/..."
-            value={newJobUrl}
-            onChange={(e) => onNewJobUrlChange(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onAddJob()}
-            className="border border-gray-600 bg-gray-800 text-gray-100 placeholder:text-gray-500 rounded px-3 py-2 text-sm flex-1"
-          />
-          <button
-            onClick={onAddJob}
-            disabled={!newJobUrl.trim()}
-            className="bg-amber-400 text-black px-4 py-2 rounded text-sm disabled:opacity-50"
+      {/* ── Job content preview modal ── */}
+      {showJobPreview && cleanedJobContent && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
+          onClick={() => setShowJobPreview(false)}
+        >
+          <div
+            className="relative w-full max-w-3xl h-[85vh] bg-gray-900 rounded-xl overflow-hidden shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
           >
-            + Add
-          </button>
-        </div>
-      </div>
-
-      {/* Jobs table */}
-      {jobs.length > 0 && (
-        <div className="border border-gray-700 rounded-xl overflow-hidden bg-gray-900">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-800 border-b border-gray-700">
-              <tr>
-                <th className="text-left p-3 font-medium text-gray-300">Job URL</th>
-                <th className="text-center p-3 font-medium w-24 text-gray-300">Score</th>
-                <th className="text-center p-3 font-medium w-40 text-gray-300">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {jobs.map((job) => (
-                <tr
-                  key={job.id}
-                  onClick={() => job.result && onSelectJob(job.id)}
-                  className={`border-b border-gray-700 last:border-0 transition-colors ${
-                    job.result ? "cursor-pointer hover:bg-gray-800" : ""
-                  } ${selectedJobId === job.id ? "bg-amber-900/20" : ""}`}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 shrink-0 gap-3">
+              {job.url && (
+                <button
+                  onClick={() => window.open(job.url, "_blank", "noopener,noreferrer")}
+                  className="text-xs bg-amber-400 text-black font-medium px-3 py-1.5 rounded hover:bg-amber-500 shrink-0"
                 >
-                  <td className="p-3 text-gray-300 truncate max-w-xs">{job.url}</td>
-                  <td className="p-3 text-center">
-                    {job.analyzing ? (
-                      <span className="text-gray-500 text-xs">…</span>
-                    ) : job.result ? (
-                      <ScoreBadge score={job.result.score} />
-                    ) : job.error ? (
-                      <span className="text-red-400 text-xs">Error</span>
-                    ) : (
-                      <span className="text-gray-500 text-xs">—</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-center">
-                    <div className="flex gap-2 justify-center">
-                      {!job.analyzing && !job.error && job.content && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onAnalyzeJob(job.id); }}
-                          disabled={!cvFormData}
-                          className="text-xs bg-amber-400 text-black px-3 py-1 rounded disabled:opacity-40"
-                        >
-                          {job.result ? "Re-analyse" : "Analyse"}
-                        </button>
-                      )}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onDeleteJob(job.id); }}
-                        className="text-xs text-red-400 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                    {job.error && <p className="text-xs text-red-400 mt-1">{job.error}</p>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Selected job result */}
-      {selectedJob?.result && (
-        <div className="space-y-4">
-          <p className="text-xs text-gray-500 truncate">{selectedJob.url}</p>
-          <MatchDetail result={selectedJob.result} />
-
-          {/* Document generation buttons */}
-          <div className="flex flex-wrap gap-3 items-center">
-            <button
-              onClick={() => onTailorCv(selectedJob.id)}
-              disabled={!cvFormData || selectedJob.tailoringCv}
-              className="flex items-center gap-2 bg-gray-800 border border-gray-600 text-gray-200 px-4 py-2 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-40 transition-colors"
-            >
-              {selectedJob.tailoringCv ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  Tailoring CV…
-                </>
-              ) : (
-                "Tailor CV"
+                  Open job posting
+                </button>
               )}
-            </button>
-            <button
-              onClick={() => onCreateCoverLetter(selectedJob.id)}
-              disabled={!cvFormData || selectedJob.generatingCoverLetter}
-              className="flex items-center gap-2 bg-gray-800 border border-gray-600 text-gray-200 px-4 py-2 rounded-lg text-sm hover:bg-gray-700 disabled:opacity-40 transition-colors"
-            >
-              {selectedJob.generatingCoverLetter ? (
-                <>
-                  <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  Generating…
-                </>
-              ) : (
-                "Create Cover Letter"
-              )}
-            </button>
-            {!cvFormData && (
-              <span className="text-amber-400 text-xs">Upload CV to generate documents</span>
-            )}
+              <span className="text-xs text-gray-500 truncate flex-1">{job.url || "Job Description"}</span>
+              <button
+                onClick={() => setShowJobPreview(false)}
+                className="text-gray-400 hover:text-white text-lg leading-none shrink-0"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-5">
+              <pre className="text-xs text-gray-300 whitespace-pre-wrap leading-relaxed font-sans">
+                {cleanedJobContent}
+              </pre>
+            </div>
           </div>
-
-          {/* Tailored CV panel */}
-          {(selectedJob.tailoredCv || selectedJob.tailoringCv) && (
-            <div className="border border-gray-700 rounded-xl p-5 bg-gray-900 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">Tailored CV</h3>
-                {selectedJob.tailoredCv && (
-                  <button
-                    onClick={() => downloadPdf("tailored-cv.pdf", selectedJob.tailoredCv!)}
-                    className="text-xs bg-amber-400 text-black px-3 py-1 rounded hover:bg-amber-500"
-                  >
-                    Download PDF
-                  </button>
-                )}
-              </div>
-              {selectedJob.tailoringCv ? (
-                <div className="flex items-center gap-2 text-gray-400 text-sm py-6">
-                  <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  Rewriting your CV for this role…
-                </div>
-              ) : (
-                <textarea
-                  value={selectedJob.tailoredCv ?? ""}
-                  onChange={(e) => onUpdateTailoredCv(selectedJob.id, e.target.value)}
-                  rows={22}
-                  className="w-full bg-gray-800 border border-gray-600 text-gray-100 text-xs font-mono rounded p-3 resize-y leading-relaxed"
-                />
-              )}
-            </div>
-          )}
-
-          {/* Cover Letter panel */}
-          {(selectedJob.coverLetter || selectedJob.generatingCoverLetter) && (
-            <div className="border border-gray-700 rounded-xl p-5 bg-gray-900 space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">Cover Letter</h3>
-                {selectedJob.coverLetter && (
-                  <button
-                    onClick={() => downloadPdf("cover-letter.pdf", selectedJob.coverLetter!)}
-                    className="text-xs bg-amber-400 text-black px-3 py-1 rounded hover:bg-amber-500"
-                  >
-                    Download PDF
-                  </button>
-                )}
-              </div>
-              {selectedJob.generatingCoverLetter ? (
-                <div className="flex items-center gap-2 text-gray-400 text-sm py-6">
-                  <span className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  Writing your cover letter…
-                </div>
-              ) : (
-                <textarea
-                  value={selectedJob.coverLetter ?? ""}
-                  onChange={(e) => onUpdateCoverLetter(selectedJob.id, e.target.value)}
-                  rows={16}
-                  className="w-full bg-gray-800 border border-gray-600 text-gray-100 text-xs font-mono rounded p-3 resize-y leading-relaxed"
-                />
-              )}
-            </div>
-          )}
         </div>
       )}
 
-      {!cvFormData && jobs.some((j) => j.result) && (
-        <p className="text-amber-400 text-sm">
-          Re-upload your CV to run new analyses. Past results are still shown above.
-        </p>
+      {/* ── Tailored CV PDF preview modal ── */}
+      {cvPdfUri && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
+          onClick={() => setCvPdfUri(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl h-[90vh] bg-gray-900 rounded-xl overflow-hidden shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 shrink-0">
+              <span className="text-sm font-medium text-gray-300">Tailored CV Preview</span>
+              <button
+                onClick={() => setCvPdfUri(null)}
+                className="text-gray-400 hover:text-white text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <iframe src={cvPdfUri} className="w-full h-[calc(90vh-41px)]" title="Tailored CV PDF Preview" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Cover Letter PDF preview modal ── */}
+      {coverLetterPdfUri && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-6"
+          onClick={() => setCoverLetterPdfUri(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl h-[90vh] bg-gray-900 rounded-xl overflow-hidden shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 shrink-0">
+              <span className="text-sm font-medium text-gray-300">Cover Letter Preview</span>
+              <button
+                onClick={() => setCoverLetterPdfUri(null)}
+                className="text-gray-400 hover:text-white text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <iframe src={coverLetterPdfUri} className="w-full h-[calc(90vh-41px)]" title="Cover Letter PDF Preview" />
+          </div>
+        </div>
       )}
     </div>
   );
