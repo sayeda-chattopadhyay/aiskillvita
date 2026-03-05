@@ -90,11 +90,10 @@ export default function ProfileApp() {
             onJobUrlChange={setJobUrl}
             onRawJobTextChange={setRawJobText}
             onAnalyseMatch={handleAnalyseMatch}
-            onClearJob={handleClearJob}
             onTailorCv={handleTailorCv}
             onCreateCoverLetter={handleCreateCoverLetter}
-            onUpdateTailoredCv={handleUpdateTailoredCv}
-            onUpdateCoverLetter={handleUpdateCoverLetter}
+            onUploadCv={handleUploadCv}
+            onGoToProfile={() => setView("profile")}
           />
         )}
       </main>

@@ -39,6 +39,7 @@ export function SkillMatchView({
   onTailorCv,
   onCreateCoverLetter,
   onUploadCv,
+  onGoToProfile,
 }: {
   cvName: string | null;
   hasCv: boolean;
@@ -53,6 +54,7 @@ export function SkillMatchView({
   onTailorCv: () => void;
   onCreateCoverLetter: () => void;
   onUploadCv: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onGoToProfile: () => void;
 }) {
   const [showJobPreview, setShowJobPreview] = useState(false);
   const [showAddNewJobMsg, setShowAddNewJobMsg] = useState(false);
@@ -82,19 +84,33 @@ export function SkillMatchView({
 
         {/* ── LEFT COLUMN ── */}
         <div className="space-y-4">
-          {/* CV status */}
-          <div className="text-sm">
-            {hasCv ? (
-              <span className="text-green-400">✓ CV loaded{cvName ? `: ${cvName}` : ""}</span>
-            ) : (
-              <span className="text-amber-400">
-                No CV found —{" "}
-                <button onClick={onGoToProfile} className="underline hover:text-amber-300">
-                  go to Profile to upload your CV
-                </button>
-              </span>
-            )}
-          </div>
+          {/* CV status / upload */}
+          {hasCv ? (
+            <div className="flex items-center justify-between gap-3 text-sm flex-wrap">
+              <div className="flex items-center gap-3">
+                <span className="text-green-400">✓ CV loaded{cvName ? `: ${cvName}` : ""}</span>
+                <label className="cursor-pointer text-xs text-gray-500 hover:text-gray-300 underline">
+                  Replace
+                  <input type="file" accept=".pdf" onChange={onUploadCv} className="hidden" />
+                </label>
+              </div>
+              <button
+                onClick={onGoToProfile}
+                className="text-sm font-medium text-amber-400 hover:text-amber-300 transition-colors"
+              >
+                Go to Profile →
+              </button>
+            </div>
+          ) : (
+            <div className="border border-amber-700/40 rounded-xl p-4 bg-amber-900/10 space-y-3">
+              <p className="text-sm text-gray-300 font-medium">Upload your CV to get started</p>
+              <p className="text-xs text-gray-500">Upload your PDF CV once and your profile will be built automatically.</p>
+              <label className="cursor-pointer inline-flex items-center gap-2 bg-amber-400 text-black font-semibold px-5 py-2 rounded-lg text-sm hover:bg-amber-500 transition-colors">
+                Upload CV (PDF)
+                <input type="file" accept=".pdf" onChange={onUploadCv} className="hidden" />
+              </label>
+            </div>
+          )}
 
           {/* Input card */}
           <div className="border border-gray-700 rounded-xl p-5 bg-gray-900 space-y-4">
@@ -151,7 +167,7 @@ export function SkillMatchView({
             )}
 
             {!hasCv && (
-              <p className="text-amber-400 text-xs">Upload your CV on the Profile page before analysing.</p>
+              <p className="text-amber-400 text-xs">Upload your CV above before analysing.</p>
             )}
             {job.error && <p className="text-red-400 text-xs">{job.error}</p>}
           </div>
