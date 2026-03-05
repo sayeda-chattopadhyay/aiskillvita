@@ -16,8 +16,6 @@ export function Sidebar({
 
   return (
     <aside className="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-56 bg-gray-900 border-r border-gray-800 flex flex-col p-4 z-10">
-      <div className="font-bold text-sm mb-8 px-2 text-gray-400 uppercase tracking-widest">Navigation</div>
-
       <nav className="flex flex-col gap-1 flex-1">
         {items.map((item) => (
           <button
