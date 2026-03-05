@@ -198,5 +198,5 @@ This is a demo. To keep API costs manageable:
 **Sayeda Chattopadhyay**
 
 - Portfolio: [sayedachattopadhyay.com](https://sayedachattopadhyay.com)
-- LinkedIn: [LinkedIn](https://www.linkedin.com/in/sayedac/)]
-- GitHub: [Github](https://github.com/sayeda-chattopadhyay/aiskillvita)
+- LinkedIn: [LinkedIn](https://www.linkedin.com/in/sayedac/)
+- GitHub: [Github](https://github.com/sayeda-chattopadhyay)
