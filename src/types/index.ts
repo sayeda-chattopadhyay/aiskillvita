@@ -9,7 +9,6 @@ export type MatchResult = {
 };
 
 export type JobEntry = {
-  id: string;
   url: string;
   content: string;
   result: MatchResult | null;
