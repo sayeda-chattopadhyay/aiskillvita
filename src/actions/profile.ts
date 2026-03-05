@@ -2,12 +2,17 @@
 
 import { generateObject } from "ai";
 import { z } from "zod";
-import { google } from "./ai";
+import { model } from "./ai";
 
 export type ProfileData = {
   name: string;
   summary: string;
-  experience: { title: string; company: string; duration: string; description: string }[];
+  experience: {
+    title: string;
+    company: string;
+    duration: string;
+    description: string;
+  }[];
   education: { degree: string; institution: string; year: string }[];
   skills: string[];
   extras?: { section: string; items: string[] }[];
@@ -22,14 +27,14 @@ const profileSchema = z.object({
       company: z.string(),
       duration: z.string(),
       description: z.string(),
-    })
+    }),
   ),
   education: z.array(
     z.object({
       degree: z.string(),
       institution: z.string(),
       year: z.string(),
-    })
+    }),
   ),
   skills: z.array(z.string()),
   extras: z
@@ -37,7 +42,7 @@ const profileSchema = z.object({
       z.object({
         section: z.string(),
         items: z.array(z.string()),
-      })
+      }),
     )
     .optional(),
 });
@@ -47,7 +52,7 @@ export async function extractProfile(formData: FormData): Promise<ProfileData> {
   const buffer = await file.arrayBuffer();
 
   const { object } = await generateObject({
-    model: google("gemini-2.5-flash"),
+    model: model,
     schema: profileSchema,
     messages: [
       {

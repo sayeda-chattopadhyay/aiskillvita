@@ -1,17 +1,17 @@
 "use server";
 
 import { generateText } from "ai";
-import { google } from "./ai";
+import { model } from "./ai";
 
 export async function tailorCv(
   formData: FormData,
-  jobContent: string
+  jobContent: string,
 ): Promise<string> {
   const file = formData.get("resume") as File;
   const buffer = await file.arrayBuffer();
 
   const { text } = await generateText({
-    model: google("gemini-2.5-flash"),
+    model: model,
     messages: [
       {
         role: "user",
@@ -45,13 +45,13 @@ Output format rules (follow exactly):
 
 export async function createCoverLetter(
   formData: FormData,
-  jobContent: string
+  jobContent: string,
 ): Promise<string> {
   const file = formData.get("resume") as File;
   const buffer = await file.arrayBuffer();
 
   const { text } = await generateText({
-    model: google("gemini-2.5-flash"),
+    model: model,
     messages: [
       {
         role: "user",
