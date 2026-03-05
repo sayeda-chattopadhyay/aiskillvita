@@ -93,7 +93,6 @@ export default function ProfileApp() {
             onTailorCv={handleTailorCv}
             onCreateCoverLetter={handleCreateCoverLetter}
             onUploadCv={handleUploadCv}
-            onGoToProfile={() => setView("profile")}
           />
         )}
       </main>
