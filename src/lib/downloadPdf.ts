@@ -1,15 +1,6 @@
 import jsPDF from "jspdf";
 
-/**
- * Renders plain-text content as a formatted A4 PDF and triggers a download.
- * Handles:
- *  - First line → large bold heading (name or headline)
- *  - ALL CAPS lines → bold section header with thin underline
- *  - "Label – body" lines → bold label inline with normal body text
- *  - "- " lines → indented bullet points
- *  - Everything else → normal body text
- */
-export function downloadPdf(filename: string, content: string): void {
+function buildPdf(content: string): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -139,5 +130,15 @@ export function downloadPdf(filename: string, content: string): void {
     }
   }
 
-  doc.save(filename);
+  return doc;
+}
+
+/** Triggers a PDF download in the browser. */
+export function downloadPdf(filename: string, content: string): void {
+  buildPdf(content).save(filename);
+}
+
+/** Returns a data URI string for embedding the PDF in an iframe (preview). */
+export function getPdfDataUri(content: string): string {
+  return buildPdf(content).output("datauristring");
 }
