@@ -38,9 +38,6 @@ export default function ProfileApp() {
     handleAnalyseMatch,
     handleTailorCv,
     handleCreateCoverLetter,
-    handleUpdateTailoredCv,
-    handleUpdateCoverLetter,
-    handleClearJob,
   } = useJobs(cvFormData);
 
   // Persist the active view tab
