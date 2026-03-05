@@ -2,7 +2,7 @@
 
 import { generateObject } from "ai";
 import { z } from "zod";
-import { google } from "./ai";
+import { model } from "./ai";
 
 const matchSchema = z.object({
   score: z.number().min(0).max(100),
@@ -34,7 +34,10 @@ export async function fetchJobAd(url: string): Promise<string> {
     .replace(/<footer[\s\S]*?<\/footer>/gi, "")
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<\/?(?:p|div|br|li|h[1-6]|section|article|main|ul|ol|tr)[^>]*>/gi, "\n")
+    .replace(
+      /<\/?(?:p|div|br|li|h[1-6]|section|article|main|ul|ol|tr)[^>]*>/gi,
+      "\n",
+    )
     .replace(/<[^>]*>/g, "")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
@@ -48,13 +51,21 @@ export async function fetchJobAd(url: string): Promise<string> {
 
 export async function matchCandidate(
   formData: FormData,
-  jobContent: string
-): Promise<{ score: number; matched_skills: string[]; missing_skills: string[]; summary: string }> {
+  jobContent: string,
+): Promise<{
+  score: number;
+  matched_skills: string[];
+  missing_skills: string[];
+  summary: string;
+}> {
   const file = formData.get("resume") as File;
   const buffer = await file.arrayBuffer();
 
+  // Truncate job content to avoid exceeding model context limits
+  const truncatedContent = jobContent.slice(0, 12000);
+
   const { object } = await generateObject({
-    model: google("gemini-2.5-flash"),
+    model: model,
     schema: matchSchema,
     messages: [
       {
@@ -65,7 +76,7 @@ export async function matchCandidate(
             text: `You are a recruitment assistant. The CV and job posting may be in different languages (e.g. CV in English, job ad in Norwegian) — analyse them across languages and return results in English.
 
 Job Posting Content:
-${jobContent}
+${truncatedContent}
 
 Analyse how well the attached CV matches this job posting. Return:
 - score: number 0-100 (overall match percentage)

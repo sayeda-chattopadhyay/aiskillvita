@@ -43,3 +43,5 @@ next-env.d.ts
 
 # priivate-document
 /private-docs
+
+PROJECT_DOCUMENTATION.md

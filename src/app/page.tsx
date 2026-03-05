@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Footer } from "@/components/layout/Footer";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
+    <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col pt-14">
       {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-8">
+      <main className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-8 ">
         <div className="space-y-4 max-w-2xl">
           <h1 className="text-4xl font-bold leading-tight">
             Stop sending generic CVs.{" "}
@@ -12,7 +13,7 @@ export default function Home() {
           </h1>
           <p className="text-gray-400 text-lg leading-relaxed">
             AISkillVita reads your CV, analyzes the job posting, and tells you
-            exactly how well you match — then rewrites your CV and cover letter
+            exactly how well you match, then rewrites your CV and cover letter
             to fit the role. No more one-size-fits-all applications.
           </p>
         </div>
@@ -39,7 +40,7 @@ export default function Home() {
             <h3 className="font-semibold mb-1">Match Score & Gap Analysis</h3>
             <p className="text-gray-400 text-sm">
               Paste a job posting URL and see your fit score, which skills you
-              already have, and what&apos;s missing — so you know where you
+              already have, and what&apos;s missing, so you know where you
               stand.
             </p>
           </div>
@@ -53,11 +54,7 @@ export default function Home() {
           </div>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-gray-800 px-8 py-4 text-center text-xs text-gray-600">
-        AISkillVita — AI-powered CV & job matching
-      </footer>
+      <Footer />
     </div>
   );
 }

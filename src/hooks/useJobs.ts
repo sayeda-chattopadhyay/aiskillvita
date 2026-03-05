@@ -1,157 +1,141 @@
 import { useState, useEffect } from "react";
 import { fetchJobAd, matchCandidate, tailorCv, createCoverLetter } from "@/actions";
 import type { JobEntry } from "@/types";
-import { uid } from "@/lib/uid";
+import { useGenerationLimit } from "@/hooks/useGenerationLimit";
 
-const LS_JOBS = "asv_jobs";
+const LS_JOB = "asv_job";
+
+const emptyJob: JobEntry = {
+  url: "",
+  content: "",
+  result: null,
+  analyzing: false,
+  error: null,
+  tailoredCv: null,
+  tailoringCv: false,
+  coverLetter: null,
+  generatingCoverLetter: false,
+};
 
 export function useJobs(cvFormData: FormData | null) {
-  const [jobs, setJobs] = useState<JobEntry[]>([]);
-  const [newJobUrl, setNewJobUrl] = useState("");
-  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [job, setJob] = useState<JobEntry>(emptyJob);
+  const [jobUrl, setJobUrl] = useState("");
+  const [rawJobText, setRawJobText] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const { cvGenerated, coverLetterGenerated, markCvUsed, markCoverLetterUsed } = useGenerationLimit();
 
   // Load from localStorage on mount
   useEffect(() => {
-    const savedJobs = localStorage.getItem(LS_JOBS);
-    if (savedJobs) {
-      const d = JSON.parse(savedJobs);//
-      if (d.jobs) {
-        setJobs(
-          d.jobs.map((j: JobEntry) => ({
-            ...j,
-            analyzing: false,
-            error: null,
-            tailoringCv: false,
-            generatingCoverLetter: false,
-          }))
-        );
-      }
+    const saved = localStorage.getItem(LS_JOB);
+    if (saved) {
+      const d = JSON.parse(saved);
+      setJob({ ...emptyJob, ...d });
+      if (d.url) setJobUrl(d.url);
     }
     setHydrated(true);
   }, []);
 
-  // Persist jobs (only serialisable fields)
+  // Persist job (only serialisable fields)
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(
-      LS_JOBS,
-      JSON.stringify({
-        jobs: jobs.map(({ id, url, content, result, tailoredCv, coverLetter }) => ({
-          id,
-          url,
-          content,
-          result,
-          tailoredCv,
-          coverLetter,
-        })),
-      })
-    );
-  }, [jobs, hydrated]);
+    const { url, content, result, tailoredCv, coverLetter } = job;
+    localStorage.setItem(LS_JOB, JSON.stringify({ url, content, result, tailoredCv, coverLetter }));
+  }, [job, hydrated]);
 
-  async function handleAddJob() {
-    const url = newJobUrl.trim();
-    if (!url) return;
-    setNewJobUrl("");
-    const id = uid();
-    setJobs((prev) => [
-      ...prev,
-      {
-        id,
-        url,
-        content: "",
-        result: null,
-        analyzing: true,
-        error: null,
-        tailoredCv: null,
-        tailoringCv: false,
-        coverLetter: null,
-        generatingCoverLetter: false,
-      },
-    ]);
+  async function handleAnalyseMatch() {
+    if (!cvFormData) return;
+    const url = jobUrl.trim();
+    const raw = rawJobText.trim();
+    if (!url && !raw) return;
+
+    setJob({ ...emptyJob, url, analyzing: true });
+
+    let content = raw;
+
+    // If URL is provided, fetch the job content first
+    if (url) {
+      try {
+        content = await fetchJobAd(url);
+      } catch {
+        setJob((prev) => ({
+          ...prev,
+          analyzing: false,
+          error: "Could not fetch this URL. Try pasting the job description below instead.",
+        }));
+        return;
+      }
+    }
+
+    if (!content) {
+      setJob((prev) => ({
+        ...prev,
+        analyzing: false,
+        error: "Please enter a job URL or paste the job description.",
+      }));
+      return;
+    }
+
     try {
-      const content = await fetchJobAd(url);
-      setJobs((prev) => prev.map((j) => (j.id === id ? { ...j, content, analyzing: false } : j)));
-    } catch {
-      setJobs((prev) =>
-        prev.map((j) => (j.id === id ? { ...j, analyzing: false, error: "Could not fetch this URL." } : j))
-      );
+      setJob((prev) => ({ ...prev, content, error: null }));
+      const result = await matchCandidate(cvFormData, content);
+      setJob((prev) => ({ ...prev, result, analyzing: false }));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setJob((prev) => ({ ...prev, analyzing: false, error: `Analysis failed: ${msg}` }));
     }
   }
 
-  async function handleAnalyzeJob(jobId: string) {
-    if (!cvFormData) return;
-    const job = jobs.find((j) => j.id === jobId);
-    if (!job) return;
-    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, analyzing: true, error: null } : j)));
-    try {
-      const result = await matchCandidate(cvFormData, job.content);
-      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, result, analyzing: false } : j)));
-      setSelectedJobId(jobId);
-    } catch {
-      setJobs((prev) =>
-        prev.map((j) => (j.id === jobId ? { ...j, analyzing: false, error: "Analysis failed." } : j))
-      );
-    }
-  }
-
-  function handleDeleteJob(jobId: string) {
-    setJobs((prev) => prev.filter((j) => j.id !== jobId));
-    if (selectedJobId === jobId) setSelectedJobId(null);
-  }
-
-  async function handleTailorCv(jobId: string) {
-    if (!cvFormData) return;
-    const job = jobs.find((j) => j.id === jobId);
-    if (!job) return;
-    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, tailoringCv: true } : j)));
+  async function handleTailorCv() {
+    if (!cvFormData || cvGenerated) return;
+    setJob((prev) => ({ ...prev, tailoringCv: true }));
     try {
       const tailoredCvText = await tailorCv(cvFormData, job.content);
-      setJobs((prev) =>
-        prev.map((j) => (j.id === jobId ? { ...j, tailoredCv: tailoredCvText, tailoringCv: false } : j))
-      );
+      setJob((prev) => ({ ...prev, tailoredCv: tailoredCvText, tailoringCv: false }));
+      markCvUsed();
     } catch {
-      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, tailoringCv: false } : j)));
+      setJob((prev) => ({ ...prev, tailoringCv: false }));
     }
   }
 
-  async function handleCreateCoverLetter(jobId: string) {
-    if (!cvFormData) return;
-    const job = jobs.find((j) => j.id === jobId);
-    if (!job) return;
-    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, generatingCoverLetter: true } : j)));
+  async function handleCreateCoverLetter() {
+    if (!cvFormData || coverLetterGenerated) return;
+    setJob((prev) => ({ ...prev, generatingCoverLetter: true }));
     try {
       const coverLetterText = await createCoverLetter(cvFormData, job.content);
-      setJobs((prev) =>
-        prev.map((j) =>
-          j.id === jobId ? { ...j, coverLetter: coverLetterText, generatingCoverLetter: false } : j
-        )
-      );
+      setJob((prev) => ({ ...prev, coverLetter: coverLetterText, generatingCoverLetter: false }));
+      markCoverLetterUsed();
     } catch {
-      setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, generatingCoverLetter: false } : j)));
+      setJob((prev) => ({ ...prev, generatingCoverLetter: false }));
     }
   }
 
-  function handleUpdateTailoredCv(jobId: string, content: string) {
-    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, tailoredCv: content } : j)));
+  function handleUpdateTailoredCv(content: string) {
+    setJob((prev) => ({ ...prev, tailoredCv: content }));
   }
 
-  function handleUpdateCoverLetter(jobId: string, content: string) {
-    setJobs((prev) => prev.map((j) => (j.id === jobId ? { ...j, coverLetter: content } : j)));
+  function handleUpdateCoverLetter(content: string) {
+    setJob((prev) => ({ ...prev, coverLetter: content }));
+  }
+
+  function handleClearJob() {
+    setJob(emptyJob);
+    setJobUrl("");
+    setRawJobText("");
   }
 
   return {
-    jobs,
-    newJobUrl,
-    setNewJobUrl,
-    selectedJobId,
-    setSelectedJobId,
-    handleAddJob,
-    handleAnalyzeJob,
-    handleDeleteJob,
+    job,
+    jobUrl,
+    setJobUrl,
+    rawJobText,
+    setRawJobText,
+    cvGenerated,
+    coverLetterGenerated,
+    handleAnalyseMatch,
     handleTailorCv,
     handleCreateCoverLetter,
     handleUpdateTailoredCv,
     handleUpdateCoverLetter,
+    handleClearJob,
   };
 }
